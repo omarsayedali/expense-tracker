@@ -1,0 +1,30 @@
+name: omarweight: 77coach name: kimobest lift: deadliftteam :egyname: omar
+weight: 99
+coach name: kimo
+best lift: deadlift
+team :egy
+name: omar
+weight: 88
+coach name: kimo
+best lift: squat
+team :egy
+name: omar
+weight: 98
+coach name: kimo
+best lift: deadlift
+team :egy
+name: omar
+weight: 88
+coach name: kimo
+best lift: deadlift
+team :egy
+name: omar
+weight: 96
+coach name: kimo
+best lift: deadlift
+team :egypt
+name: omar
+weight: 88
+coach name: kimo
+best lift: bench press
+team :egy

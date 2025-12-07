@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS Student Productivity Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        // Simple state management
+        const state = {
+            activeTab: 'pomodoro',
+            time: 25 * 60,
+            isActive: false,
+            mode: 'work',
+            workTime: 25,
+            breakTime: 5,
+            tasks: [],
+            newTask: '',
+            taskCategory: 'coding',
+            completedToday: 0,
+            totalFocusTime: 0,
+            timerInterval: null
+        };
+
+        // Load data from localStorage
+        function loadData() {
+            const savedTasks = localStorage.getItem('cs-tasks');
+            const savedStats = localStorage.getItem('cs-stats');
+            const savedSettings = localStorage.getItem('cs-settings');
+            
+            if (savedTasks) {
+                state.tasks = JSON.parse(savedTasks);
+            }
+            if (savedStats) {
+                const stats = JSON.parse(savedStats);
+                state.completedToday = stats.completedToday || 0;
+                state.totalFocusTime = stats.totalFocusTime || 0;
+            }
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                state.workTime = settings.workTime || 25;
+                state.breakTime = settings.breakTime || 5;
+                state.time = state.workTime * 60;
+            }
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('cs-tasks', JSON.stringify(state.tasks));
+            localStorage.setItem('cs-stats', JSON.stringify({
+                completedToday: state.completedToday,
+                totalFocusTime: state.totalFocusTime
+            }));
+            localStorage.setItem('cs-settings', JSON.stringify({
+                workTime: state.workTime,
+                breakTime: state.breakTime
+            }));
+        }
+
+        // Timer functions
+        function startTimer() {
+            state.isActive = true;
+            state.timerInterval = setInterval(() => {
+                if (state.time > 0) {
+                    state.time--;
+                    render();
+                } else {
+                    handleTimerComplete();
+                }
+            }, 1000);
+            render();
+        }
+
+        function pauseTimer() {
+            state.isActive = false;
+            clearInterval(state.timerInterval);
+            render();
+        }
+
+        function resetTimer() {
+            state.isActive = false;
+            clearInterval(state.timerInterval);
+            state.time = state.mode === 'work' ? state.workTime * 60 : state.breakTime * 60;
+            render();
+        }
+
+        function handleTimerComplete() {
+            state.isActive = false;
+            clearInterval(state.timerInterval);
+            
+            if (state.mode === 'work') {
+                state.totalFocusTime += state.workTime;
+                saveData();
+                alert('Great work! Time for a break! 🎉');
+                state.mode = 'break';
+                state.time = state.breakTime * 60;
+            } else {
+                alert('Break over! Ready to code? 💻');
+                state.mode = 'work';
+                state.time = state.workTime * 60;
+            }
+            render();
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Task functions
+        function addTask() {
+            if (state.newTask.trim()) {
+                state.tasks.push({
+                    id: Date.now(),
+                    text: state.newTask,
+                    category: state.taskCategory,
+                    completed: false
+                });
+                state.newTask = '';
+                saveData();
+                render();
+            }
+        }
+
+        function toggleTask(id) {
+            const task = state.tasks.find(t => t.id === id);
+            if (task && !task.completed) {
+                task.completed = true;
+                state.completedToday++;
+                saveData();
+                render();
+            }
+        }
+
+        function deleteTask(id) {
+            state.tasks = state.tasks.filter(t => t.id !== id);
+            saveData();
+            render();
+        }
+
+        function clearAllTasks() {
+            if (confirm('Are you sure you want to clear all tasks?')) {
+                state.tasks = [];
+                saveData();
+                render();
+            }
+        }
+
+        function resetStats() {
+            if (confirm('Are you sure you want to reset all stats?')) {
+                state.completedToday = 0;
+                state.totalFocusTime = 0;
+                saveData();
+                render();
+            }
+        }
+
+        // UI helper functions
+        function getCategoryIcon(category) {
+            const icons = {
+                coding: '💻',
+                learning: '📖',
+                project: '⚡',
+                other: '☕'
+            };
+            return icons[category] || '☕';
+        }
+
+        function getCategoryColor(category) {
+            const colors = {
+                coding: 'bg-blue-100 text-blue-700 border-blue-300',
+                learning: 'bg-green-100 text-green-700 border-green-300',
+                project: 'bg-purple-100 text-purple-700 border-purple-300',
+                other: 'bg-gray-100 text-gray-700 border-gray-300'
+            };
+            return colors[category] || colors.other;
+        }
+
+        // Render function
+        function render() {
+            const app = document.getElementById('app');
+            
+            app.innerHTML = `
+                <div class="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 p-4 md:p-6">
+                    <div class="max-w-4xl mx-auto">
+                        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                            <!-- Header -->
+                            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
+                                <h1 class="text-2xl md:text-3xl font-bold mb-2">CS Student Productivity Hub</h1>
+                                <p class="text-indigo-100">Stay focused, code better, learn smarter 💻</p>
+                            </div>
+
+                            <!-- Tabs -->
+                            <div class="flex border-b">
+                                <button onclick="changeTab('pomodoro')" class="flex-1 py-4 font-semibold transition-colors ${state.activeTab === 'pomodoro' ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-600 hover:bg-gray-50'}">
+                                    Focus Timer
+                                </button>
+                                <button onclick="changeTab('tasks')" class="flex-1 py-4 font-semibold transition-colors ${state.activeTab === 'tasks' ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-600 hover:bg-gray-50'}">
+                                    Tasks
+                                </button>
+                                <button onclick="changeTab('stats')" class="flex-1 py-4 font-semibold transition-colors ${state.activeTab === 'stats' ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-600 hover:bg-gray-50'}">
+                                    Stats
+                                </button>
+                            </div>
+
+                            <!-- Content -->
+                            <div class="p-6 md:p-8">
+                                ${renderTabContent()}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTabContent() {
+            if (state.activeTab === 'pomodoro') {
+                return `
+                    <div class="space-y-6 fade-in">
+                        <div class="text-center">
+                            <div class="inline-block bg-gradient-to-br from-indigo-500 to-purple-600 text-white px-6 py-2 rounded-full mb-4 font-semibold">
+                                ${state.mode === 'work' ? '💻 Focus Time' : '☕ Break Time'}
+                            </div>
+                            <div class="text-6xl md:text-8xl font-bold text-gray-800 mb-6">
+                                ${formatTime(state.time)}
+                            </div>
+                            <div class="flex justify-center gap-4 mb-6">
+                                <button onclick="${state.isActive ? 'pauseTimer()' : 'startTimer()'}" 
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full transition-colors shadow-lg">
+                                    ${state.isActive ? '⏸️' : '▶️'}
+                                </button>
+                                <button onclick="resetTimer()" 
+                                    class="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-full transition-colors shadow-lg">
+                                    🔄
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md mx-auto">
+                            <div class="bg-indigo-50 p-4 rounded-lg">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Work Duration (min)
+                                </label>
+                                <input type="number" value="${state.workTime}" 
+                                    onchange="updateWorkTime(this.value)"
+                                    class="w-full px-3 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" 
+                                    min="1">
+                            </div>
+                            <div class="bg-purple-50 p-4 rounded-lg">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Break Duration (min)
+                                </label>
+                                <input type="number" value="${state.breakTime}" 
+                                    onchange="updateBreakTime(this.value)"
+                                    class="w-full px-3 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none" 
+                                    min="1">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (state.activeTab === 'tasks') {
+                return `
+                    <div class="space-y-4 fade-in">
+                        <div class="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg">
+                            <div class="flex flex-col md:flex-row gap-2">
+                                <input type="text" value="${state.newTask}" 
+                                    oninput="state.newTask = this.value"
+                                    onkeypress="if(event.key === 'Enter') addTask()"
+                                    placeholder="Add a new task..."
+                                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <select onchange="state.taskCategory = this.value" 
+                                    class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <option value="coding" ${state.taskCategory === 'coding' ? 'selected' : ''}>Coding</option>
+                                    <option value="learning" ${state.taskCategory === 'learning' ? 'selected' : ''}>Learning</option>
+                                    <option value="project" ${state.taskCategory === 'project' ? 'selected' : ''}>Project</option>
+                                    <option value="other" ${state.taskCategory === 'other' ? 'selected' : ''}>Other</option>
+                                </select>
+                                <button onclick="addTask()" 
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition-colors">
+                                    ➕ Add
+                                </button>
+                            </div>
+                        </div>
+
+                        ${state.tasks.length > 0 ? `
+                            <div class="flex justify-end">
+                                <button onclick="clearAllTasks()" class="text-sm text-red-600 hover:text-red-700 underline">
+                                    Clear All Tasks
+                                </button>
+                            </div>
+                        ` : ''}
+
+                        <div class="space-y-2">
+                            ${state.tasks.length === 0 ? `
+                                <div class="text-center py-12 text-gray-400">
+                                    <div class="text-6xl mb-4">💻</div>
+                                    <p>No tasks yet. Add your first coding task! 🚀</p>
+                                </div>
+                            ` : state.tasks.map(task => `
+                                <div class="flex items-center gap-3 p-4 rounded-lg border-2 transition-all ${
+                                    task.completed 
+                                        ? 'bg-gray-50 border-gray-200 opacity-60' 
+                                        : 'bg-white border-gray-200 hover:border-indigo-300 shadow-sm'
+                                }">
+                                    <button onclick="toggleTask(${task.id})" 
+                                        class="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                            task.completed 
+                                                ? 'bg-green-500 border-green-500' 
+                                                : 'border-gray-300 hover:border-indigo-500'
+                                        }">
+                                        ${task.completed ? '✓' : ''}
+                                    </button>
+                                    <div class="flex items-center gap-2 px-3 py-1 rounded-full border ${getCategoryColor(task.category)}">
+                                        <span>${getCategoryIcon(task.category)}</span>
+                                        <span class="text-xs font-semibold">${task.category}</span>
+                                    </div>
+                                    <span class="flex-1 ${task.completed ? 'line-through text-gray-400' : 'text-gray-800'}">
+                                        ${task.text}
+                                    </span>
+                                    <button onclick="deleteTask(${task.id})" 
+                                        class="text-red-500 hover:text-red-700 transition-colors">
+                                        🗑️
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                const tasksByCategory = {
+                    coding: state.tasks.filter(t => t.category === 'coding'),
+                    learning: state.tasks.filter(t => t.category === 'learning'),
+                    project: state.tasks.filter(t => t.category === 'project'),
+                    other: state.tasks.filter(t => t.category === 'other')
+                };
+
+                return `
+                    <div class="space-y-6 fade-in">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow-lg">
+                                <div class="text-3xl font-bold mb-2">${state.completedToday}</div>
+                                <div class="text-blue-100">Tasks Completed</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-xl shadow-lg">
+                                <div class="text-3xl font-bold mb-2">${state.totalFocusTime}</div>
+                                <div class="text-green-100">Focus Minutes</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-xl shadow-lg">
+                                <div class="text-3xl font-bold mb-2">${state.tasks.length}</div>
+                                <div class="text-purple-100">Total Tasks</div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button onclick="resetStats()" class="text-sm text-red-600 hover:text-red-700 underline">
+                                Reset All Stats
+                            </button>
+                        </div>
+
+                        <div class="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4">📊 Task Breakdown</h3>
+                            <div class="space-y-3">
+                                ${Object.entries(tasksByCategory).map(([category, tasks]) => {
+                                    if (tasks.length === 0) return '';
+                                    const completed = tasks.filter(t => t.completed).length;
+                                    const percentage = (completed / tasks.length * 100).toFixed(0);
+                                    return `
+                                        <div class="flex items-center gap-3">
+                                            <div class="flex items-center gap-2 px-3 py-1 rounded-full border ${getCategoryColor(category)}">
+                                                <span>${getCategoryIcon(category)}</span>
+                                                <span class="text-sm font-semibold capitalize">${category}</span>
+                                            </div>
+                                            <div class="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
+                                                <div class="bg-indigo-600 h-full transition-all" style="width: ${percentage}%"></div>
+                                            </div>
+                                            <span class="text-sm font-semibold text-gray-600">
+                                                ${completed}/${tasks.length}
+                                            </span>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        <div class="bg-yellow-50 border-2 border-yellow-200 p-6 rounded-xl">
+                            <h3 class="text-lg font-bold text-yellow-800 mb-2">💡 Productivity Tip</h3>
+                            <p class="text-yellow-700">
+                                Break down large coding projects into smaller tasks. Use the Pomodoro technique for deep work sessions, 
+                                and take regular breaks to avoid burnout. Your brain needs rest to solve complex problems! 🧠
+                            </p>
+                        </div>
+
+                        <div class="bg-blue-50 border-2 border-blue-200 p-6 rounded-xl">
+                            <h3 class="text-lg font-bold text-blue-800 mb-2">💾 Data Persistence</h3>
+                            <p class="text-blue-700 text-sm">
+                                Your tasks and stats are automatically saved in your browser and will persist across sessions. 
+                                Your data stays private and is stored locally on your device.
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Global functions
+        function changeTab(tab) {
+            state.activeTab = tab;
+            render();
+        }
+
+        function updateWorkTime(value) {
+            state.workTime = Number(value);
+            if (state.mode === 'work' && !state.isActive) {
+                state.time = state.workTime * 60;
+            }
+            saveData();
+            render();
+        }
+
+        function updateBreakTime(value) {
+            state.breakTime = Number(value);
+            if (state.mode === 'break' && !state.isActive) {
+                state.time = state.breakTime * 60;
+            }
+            saveData();
+            render();
+        }
+
+        // Initialize app
+        loadData();
+        render();
+
+        // Clean up timer on page unload
+        window.addEventListener('beforeunload', () => {
+            if (state.timerInterval) {
+                clearInterval(state.timerInterval);
+            }
+        });
+    </script>
+</body>
+</html>
