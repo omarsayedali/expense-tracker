@@ -6,15 +6,15 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    # LOAD CURRENT BUDGET TO DISPLAY
+    
     try:
         with open("budget.json", "r") as file:
             budget_data = json.load(file)
             
-            # Check if it's a dictionary
+            
             if isinstance(budget_data, dict):
     
-    # Try to get the value safely
+
                if 'monthly_budget' in budget_data:
                    current_budget = budget_data['monthly_budget']
                else:
