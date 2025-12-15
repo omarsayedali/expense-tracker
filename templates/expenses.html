@@ -536,24 +536,24 @@ body::before {
                 <div class="card-body">
                     <!-- Category Badge with Icon -->
 <span class="badge bg-primary mb-2">
-    <i class="fas fa-tag"></i> {{ expense['category'] }}
+    <i class="fas fa-tag"></i> {{ expense.category }}
 </span>
                     
                     <!-- Amount (Big and Bold) -->
-                    <h3 class="card-title text-success mb-3">${{ expense['amount'] }}</h3>
+                    <h3 class="card-title text-success mb-3">${{ expense.amount }}</h3>
                     
                     <!-- Description -->
-                    <p class="card-text text-muted">{{ expense['description'] }}</p>
+                    <p class="card-text text-muted">{{ expense.description }}</p>
                     
                     <!-- Date with Icon -->
 <p class="card-text"><small class="text-muted">
-    <i class="far fa-calendar-alt"></i> {{ expense['date'] }}
+    <i class="far fa-calendar-alt"></i> {{ expense.date }}
 </small></p>
                     
-                    <a href="/edit/{{ expense['id'] }}" class="btn btn-sm btn-success flex-fill">
+                    <a href="/edit/{{ expense.id }}" class="btn btn-sm btn-success flex-fill">
     <i class="fas fa-edit"></i> Edit
 </a>
-<a href="/delete/{{ expense['id'] }}" class="btn btn-sm btn-danger flex-fill" 
+<a href="/delete/{{ expense.id }}" class="btn btn-sm btn-danger flex-fill" 
    onclick="return confirm('Delete this expense?')">
     <i class="fas fa-trash-alt"></i> Delete
 </a>
